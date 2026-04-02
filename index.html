@@ -1,4 +1,21 @@
-.btn-home {
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulasi PBP - BPP Bola</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    :root { 
+      --bg-body: #0f172a; --bg-card: #1e293b; --bg-input: #334155;
+      --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #475569;
+      --primary: #fbbf24; --secondary: #f59e0b; --danger: #ef4444; --success: #22c55e;
+    }
+    body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-body); margin: 0; padding: 15px; color: var(--text-main); }
+    .container { max-width: 850px; margin: auto; }
+    
+  .btn-home {
   position: fixed;
   bottom: 25px;
   right: 20px;
@@ -21,3 +38,158 @@
 .btn-home:active {
   transform: scale(0.9);
 }
+
+
+    .main-header { text-align: center; margin-bottom: 25px; padding-top: 40px; }
+    .main-header h1 { color: var(--primary); margin: 0; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; }
+    .main-header p { color: var(--text-muted); margin: 5px 0 0 0; font-size: 0.75rem; }
+    
+    .card { background: var(--bg-card); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border-color); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    h2 { color: var(--primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 12px; font-size: 1rem; }
+    
+    .grid-input { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
+    .input-group { display: flex; flex-direction: column; }
+    label { font-weight: 600; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; }
+    select, input { padding: 12px; border: 2px solid var(--border-color); border-radius: 10px; outline: none; background-color: var(--bg-input); color: var(--text-main); font-size: 0.9rem; }
+    
+    .full-width { grid-column: 1 / -1; }
+    button { background: var(--primary); color: #1e293b; padding: 15px; border: none; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.3s; font-size: 1rem; }
+    button:hover { background: var(--secondary); transform: translateY(-2px); }
+    
+    .info-box { background: rgba(251, 191, 36, 0.1); padding: 18px; border-radius: 12px; margin-top: 20px; border-left: 6px solid var(--primary); }
+    .status-badge { padding: 5px 12px; border-radius: 30px; color: white; font-weight: 800; font-size: 0.75rem; }
+    .chart-container { position: relative; margin-top: 20px; height: 250px; width: 100%; }
+    .footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 30px; padding: 20px 0; border-top: 1px dashed var(--border-color); }
+  </style>
+</head>
+<body>
+<a href="https://mamank757.github.io/petani/" class="btn-home" title="Kembali ke Home">🏠</a>
+<body>
+
+<div class="container">
+<div class="card">
+  <div class="main-header">
+    <h1>Simulasi Penggerek Batang (PBP)</h1>
+    <p>Prediksi Intensitas Kerusakan Sundep & Beluk</p>
+  </div>
+
+  <div class="card">
+    <h2><i class="fas fa-bug"></i> Parameter Lapangan</h2>
+    <div class="grid-input">
+      <div class="input-group full-width">
+         <label>Skenario Pengendalian:</label>
+        <select id="skenario" onchange="updateSkenario()">
+          <option value="none">🔴 Tanpa Pengamatan (Rawan Puso)</option>
+          <option value="hayati">🟡 Agens Hayati / Beauveria Bassiana</option>
+          <option value="lampu">🟠 Light Trap & Petik Kelompok Telur</option>
+          <option value="pht">🟢 PHT Terpadu (Lengkap)</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Luas Hamparan (ha)</label>
+        <input type="number" id="luas" value="1" step="0.5">
+      </div>
+      <div class="input-group">
+        <label>Kelompok Telur / m²</label>
+        <input type="number" id="telur" value="0.2" step="0.1">
+      </div>
+      <div class="input-group">
+        <label>Fase Tanam (HST)</label>
+        <input type="number" id="hst" value="10">
+      </div>
+      <div class="input-group">
+        <label>Efikasi Kontrol (%)</label>
+        <input type="number" id="efikasi" value="5">
+      </div>
+    </div>
+    <button onclick="hitungPBP()"><i class="fas fa-vial"></i> Jalankan Simulasi Ilmiah</button>
+    
+    <div id="hasilPBP" class="info-box" style="display:none"></div>
+    <div class="chart-container"><canvas id="pbpChart"></canvas></div>
+  </div>
+
+  <div class="footer">© 2026 King Mamank • PPL BPP Bola - Kab. Wajo</div>
+</div>
+
+<script>
+let pbpChart;
+Chart.defaults.color = '#94a3b8';
+
+function updateSkenario() {
+  const s = document.getElementById('skenario').value;
+  const ef = document.getElementById('efikasi');
+  if(s=='none') ef.value = 5;
+  else if(s=='hayati') ef.value = 40;
+  else if(s=='lampu') ef.value = 65;
+  else ef.value = 85;
+}
+
+function hitungPBP() {
+  const luas = parseFloat(document.getElementById('luas').value);
+  const telurAwal = parseFloat(document.getElementById('telur').value);
+  const efikasi = parseFloat(document.getElementById('efikasi').value) / 100;
+  let hstStart = parseInt(document.getElementById('hst').value);
+  
+  let labels = [];
+  let dataKerusakan = [];
+  
+  // Model Matematika Kerusakan PBP (Asumsi 1 kelompok telur = 150-200 larva)
+  // Potensi kerusakan naik tajam pada G2 ( HST 40-70)
+  let intensitas = telurAwal * 15; // Inisialisasi awal intensitas %
+
+  for (let hst = hstStart; hst <= 100; hst += 7) {
+    labels.push("HST " + hst);
+    
+    // Pertumbuhan populasi berdasarkan generasi (puncak di bunting/beluk)
+    let faktorGenerasi = (hst > 45 && hst < 75) ? 1.8 : 1.1; 
+    let reduksi = (1 - efikasi);
+    
+    intensitas = intensitas * faktorGenerasi * reduksi;
+    
+    // Batas maksimal kerusakan 100%
+    if (intensitas > 100) intensitas = 100;
+    if (intensitas < 0.1) intensitas = 0.1;
+
+    dataKerusakan.push(intensitas.toFixed(2));
+  }
+
+  const box = document.getElementById('hasilPBP');
+  box.style.display = 'block';
+  let akhir = dataKerusakan[dataKerusakan.length-1];
+  let status, warna;
+
+  if (akhir > 10) { status = "PUSO / BERAT"; warna = "#ef4444"; }
+  else if (akhir > 6) { status = "WASPADA BELUK"; warna = "#f59e0b"; }
+  else { status = "AMAN (TERKENDALI)"; warna = "#22c55e"; }
+
+  box.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span>Prediksi Kerusakan Akhir: <b>${akhir}%</b></span>
+      <span class="status-badge" style="background:${warna}">${status}</span>
+    </div>
+    <p style="font-size:0.75rem; color:#94a3b8; margin-top:8px;">*Ambang kendali PBP adalah 6% pada fase generatif.</p>
+  `;
+
+  if (pbpChart) pbpChart.destroy();
+  pbpChart = new Chart(document.getElementById('pbpChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: '% Kerusakan',
+        data: dataKerusakan,
+        backgroundColor: warna + '80',
+        borderColor: warna,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, max: 100 } }
+    }
+  });
+}
+</script>
+</body>
+</html>
